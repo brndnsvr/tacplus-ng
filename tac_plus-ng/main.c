@@ -1508,9 +1508,13 @@ ssize_t recv_inject(struct context *ctx, void *buf, size_t len, int flags)
 {
     if (ctx->inject_buf && !ctx->inject_len) {
 	ssize_t l = recv(ctx->sock, ctx->inject_buf, INJECT_BUF_SIZE, 0);
-	if (l > -1)
+	if (l > -1) {
 	    ctx->inject_len = l;
-	ctx->inject_off = 0;
+	    ctx->inject_off = 0;
+	} else {
+	    // On error, return immediately
+	    return l;
+	}
     }
     if (ctx->inject_buf && ctx->inject_len > ctx->inject_off) {
 	if (ctx->inject_len - ctx->inject_off < len)
@@ -1523,7 +1527,7 @@ ssize_t recv_inject(struct context *ctx, void *buf, size_t len, int flags)
 	return len;
     }
     ssize_t res = recv(ctx->sock, buf, len, flags);
-    return (!res && len) ? -1 : res;
+    return res;
 }
 
 #ifdef WITH_SSL

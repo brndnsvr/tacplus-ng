@@ -537,6 +537,12 @@ void tac_read(struct context *ctx, int cur)
 	    }
 	    return;
 	}
+	if (len == 0) {
+	    // EOF - connection closed by peer
+	    ctx->reset_tcp = BISTATE_YES;
+	    cleanup(ctx, cur);
+	    return;
+	}
 
 	ctx->hdroff += len;
 	if (ctx->hdroff != TAC_PLUS_HDR_SIZE)
@@ -685,6 +691,12 @@ void tac_read(struct context *ctx, int cur)
 	    ctx->reset_tcp = BISTATE_YES;
 	    cleanup(ctx, cur);
 	}
+	return;
+    }
+    if (len == 0) {
+	// EOF - connection closed by peer
+	ctx->reset_tcp = BISTATE_YES;
+	cleanup(ctx, cur);
 	return;
     }
 
@@ -995,6 +1007,12 @@ void rad_read(struct context *ctx, int cur)
 	    }
 	    return;
 	}
+	if (len == 0) {
+	    // EOF - connection closed by peer
+	    ctx->reset_tcp = BISTATE_YES;
+	    cleanup(ctx, cur);
+	    return;
+	}
 
 	ctx->hdroff += len;
 	if (ctx->hdroff != RADIUS_HDR_SIZE)
@@ -1037,6 +1055,12 @@ void rad_read(struct context *ctx, int cur)
 	    ctx->reset_tcp = BISTATE_YES;
 	    cleanup(ctx, cur);
 	}
+	return;
+    }
+    if (len == 0) {
+	// EOF - connection closed by peer
+	ctx->reset_tcp = BISTATE_YES;
+	cleanup(ctx, cur);
 	return;
     }
 
