@@ -636,16 +636,13 @@ void tac_read(struct context *ctx, int cur)
 	int ssl_version = SSL_version(ctx->tls);
 	switch (ssl_version) {
 	case TLS1_2_VERSION:
-	    ssl_version = 0x02;
-	    break;
 	case TLS1_3_VERSION:
-	    ssl_version = 0x03;
-	    break;
+	break;
 	default:
 	    ssl_version = 0;
 	    break;
 	}
-	if (!tls_ver_ok(ssl_version, ctx->tls_versions) || ssl_version != 0x03) {
+	if (!tls_ver_ok(ssl_version & 0xff, ctx->tls_versions) || ssl_version != TLS1_3_VERSION) {
 	    ctx->reset_tcp = BISTATE_YES;
 	    cleanup(ctx, cur);
 	    return;
@@ -742,9 +739,11 @@ void tac_read(struct context *ctx, int cur)
     if (
 #ifdef WITH_SSL
 	   (ctx->tls && !(ctx->in->pak.tac.flags & TAC_PLUS_UNENCRYPTED_FLAG) && !(session->ctx->host->bug_compatibility & CLIENT_BUG_TLS_OBFUSCATED))
-	   || (!ctx->tls && (ctx->in->pak.tac.flags & TAC_PLUS_UNENCRYPTED_FLAG))
-#else
-	   (ctx->in->pak.tac.flags & TAC_PLUS_UNENCRYPTED_FLAG)
+	   || (!ctx->tls &&
+#endif
+	   (ctx->in->pak.tac.flags & TAC_PLUS_UNENCRYPTED_FLAG) && !(session->ctx->host->bug_compatibility & CLIENT_BUG_NOT_OBFUSCATED)
+#ifdef WITH_SSL
+	   )
 #endif
 	) {
 	char *msg =
@@ -776,7 +775,7 @@ void tac_read(struct context *ctx, int cur)
     }
 
     if (ctx->in->pak.tac.flags & TAC_PLUS_UNENCRYPTED_FLAG)
-	ctx->unencrypted_flag = 1;
+	ctx->unencrypted_flag = 1, ctx->key = NULL;
 
 
     if ((ctx->in->pak.tac.flags & TAC_PLUS_SINGLE_CONNECT_FLAG) && (ctx->host->single_connection == TRISTATE_YES)) {
